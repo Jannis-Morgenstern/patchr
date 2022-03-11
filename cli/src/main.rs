@@ -1,9 +1,47 @@
 mod path_util;
 mod validators;
 
-use clap::{Arg, Command};
+use clap::{Arg, ArgEnum, Command, PossibleValue};
 use path_util::find_file_in_parent_dirs;
 use validators::is_valid_package_name;
+
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, ArgEnum)]
+enum PackageManager {
+    Npm,
+    Yarn,
+    Pnpm,
+    Auto,
+}
+
+impl PackageManager {
+    pub fn possible_values() -> impl Iterator<Item = PossibleValue<'static>> {
+        PackageManager::value_variants()
+            .iter()
+            .filter_map(ArgEnum::to_possible_value)
+    }
+}
+
+impl std::fmt::Display for PackageManager {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.to_possible_value()
+            .expect("no values are skipped")
+            .get_name()
+            .fmt(f)
+    }
+}
+
+impl std::str::FromStr for PackageManager {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        for variant in Self::value_variants() {
+            if variant.to_possible_value().unwrap().matches(s, false) {
+                return Ok(*variant);
+            }
+        }
+        Err(format!("Invalid variant: {}", s))
+    }
+}
 
 fn main() {
     let current_working_directory = std::env::current_dir().unwrap();
@@ -39,7 +77,7 @@ Also works with organizations (`@org/package`).",
                         .short('p')
                         .long("package-manager")
                         .takes_value(true)
-                        .possible_values(["npm", "yarn", "pnpm", "auto"])
+                        .possible_values(PackageManager::possible_values())
                         .default_value("auto")
                         .ignore_case(true)
                         .value_name("package-manager")
