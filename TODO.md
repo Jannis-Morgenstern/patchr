@@ -1,6 +1,6 @@
 # TODO
 
-- [ ] read cli arguments
+- [x] read cli arguments
   - 1st: name of the package to be patched
   - package-manager: `npm | yarn | pnpm`
   - patch-dir: path
