@@ -5,7 +5,7 @@ use clap::{Arg, ArgEnum, Command, PossibleValue};
 use path_util::find_file_in_parent_dirs;
 use validators::is_valid_package_name;
 
-#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, ArgEnum)]
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, ArgEnum, Debug)]
 enum PackageManager {
     Npm,
     Yarn,
@@ -18,15 +18,6 @@ impl PackageManager {
         PackageManager::value_variants()
             .iter()
             .filter_map(ArgEnum::to_possible_value)
-    }
-}
-
-impl std::fmt::Display for PackageManager {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        self.to_possible_value()
-            .expect("no values are skipped")
-            .get_name()
-            .fmt(f)
     }
 }
 
@@ -46,8 +37,6 @@ impl std::str::FromStr for PackageManager {
 fn main() {
     let current_working_directory = std::env::current_dir().unwrap();
     let package_json_path = find_file_in_parent_dirs(&current_working_directory, "package.json");
-
-    println!("{:?}", package_json_path);
 
     let matches = Command::new("patchr")
         .about("patches packages")
@@ -165,7 +154,15 @@ Note: you can not place patched outside your project root directory.",
 
     match matches.subcommand() {
         Some(("create", create_matches)) => {
-            println!("{:?}", create_matches)
+            let package = create_matches.value_of("package").unwrap();
+            let package_manager =
+                PackageManager::from_str(create_matches.value_of("package-manager").unwrap(), true)
+                    .unwrap();
+            println!(
+                "Package Manager: {:?}, Package: {}",
+                package_manager, package
+            );
+            // println!("{:?}", package_json_path);
         }
         Some(("apply", apply_matches)) => {
             println!("{:?}", apply_matches)
