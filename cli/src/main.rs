@@ -1,9 +1,13 @@
 mod path_util;
 mod validators;
 
+use std::path::{Path, PathBuf};
+
 use clap::{Arg, ArgEnum, Command, PossibleValue};
 use path_util::find_file_in_parent_dirs;
 use validators::is_valid_package_name;
+
+use crate::path_util::{maybe_create_dir, parent_dir};
 
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, ArgEnum, Debug)]
 enum PackageManager {
@@ -36,7 +40,11 @@ impl std::str::FromStr for PackageManager {
 
 fn main() {
     let current_working_directory = std::env::current_dir().unwrap();
-    let package_json_path = find_file_in_parent_dirs(&current_working_directory, "package.json");
+    let package_json_path =
+        find_file_in_parent_dirs(&current_working_directory, "package.json").unwrap();
+    let root_dir = parent_dir(&package_json_path);
+
+    println!("{:?}", root_dir);
 
     let matches = Command::new("patchr")
         .about("patches packages")
@@ -158,9 +166,12 @@ Note: you can not place patched outside your project root directory.",
             let package_manager =
                 PackageManager::from_str(create_matches.value_of("package-manager").unwrap(), true)
                     .unwrap();
+            let patch_dir = Path::new(create_matches.value_of("patch-dir").unwrap());
+            let patch_dir = root_dir.join(patch_dir);
+            maybe_create_dir(&patch_dir).unwrap();
             println!(
-                "Package Manager: {:?}, Package: {}",
-                package_manager, package
+                "Package Manager: {:?}, Package: {}, Patch Directory: {:?}",
+                package_manager, package, patch_dir
             );
             // println!("{:?}", package_json_path);
         }
